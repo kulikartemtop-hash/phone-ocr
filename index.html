@@ -5,38 +5,108 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>📷 Фото → Текст</title>
   <style>
-    :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --accent: #3b82f6; }
+    :root {
+      --bg: #0f172a; --card: #1e293b; --text: #e2e8f0;
+      --input-bg: #334155; --textarea-bg: #0f172a; --border: #334155;
+      --accent: #3b82f6; --success: #10b981; --shadow: rgba(0,0,0,0.3);
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme]) {
+        --bg: #f8fafc; --card: #ffffff; --text: #0f172a;
+        --input-bg: #e2e8f0; --textarea-bg: #f1f5f9; --border: #cbd5e1;
+        --accent: #2563eb; --success: #059669; --shadow: rgba(0,0,0,0.1);
+      }
+    }
+    [data-theme="light"] {
+      --bg: #f8fafc; --card: #ffffff; --text: #0f172a;
+      --input-bg: #e2e8f0; --textarea-bg: #f1f5f9; --border: #cbd5e1;
+      --accent: #2563eb; --success: #059669; --shadow: rgba(0,0,0,0.1);
+    }
+    [data-theme="dark"] {
+      --bg: #0f172a; --card: #1e293b; --text: #e2e8f0;
+      --input-bg: #334155; --textarea-bg: #0f172a; --border: #334155;
+      --accent: #3b82f6; --success: #10b981; --shadow: rgba(0,0,0,0.3);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-    body { background: var(--bg); color: var(--text); padding: 16px; min-height: 100vh; }
-    h1 { text-align: center; margin-bottom: 16px; font-size: 1.4rem; }
-    .card { background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 16px; }
-    input[type="file"] { width: 100%; padding: 10px; background: #334155; color: var(--text); border-radius: 8px; }
-    #progress { height: 6px; background: #334155; border-radius: 3px; margin: 10px 0; overflow: hidden; display: none; }
-    #progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
-    textarea { width: 100%; min-height: 120px; background: #0f172a; color: var(--text); border: 1px solid #334155; border-radius: 8px; padding: 10px; font-size: 14px; resize: vertical; }
-    button { width: 100%; padding: 12px; margin-top: 10px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; }
+    body { background: var(--bg); color: var(--text); padding: 16px; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+    
+    .theme-toggle {
+      position: fixed; top: 12px; right: 12px; width: 36px; height: 36px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 50%;
+      font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 4px var(--shadow); transition: transform 0.2s, background 0.3s;
+    }
+    .theme-toggle:active { transform: scale(0.9); }
+
+    h1 { text-align: center; margin: 40px 0 16px; font-size: 1.4rem; }
+    .card { background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px var(--shadow); transition: background 0.3s, box-shadow 0.3s; }
+    
+    input[type="file"] { width: 100%; padding: 12px; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: background 0.3s, border 0.3s; }
+    #progress { height: 6px; background: var(--border); border-radius: 3px; margin: 12px 0 4px; overflow: hidden; display: none; }
+    #progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
+    textarea { width: 100%; min-height: 140px; background: var(--textarea-bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 15px; resize: vertical; line-height: 1.5; transition: background 0.3s, border 0.3s; }
+    
+    .btn-row { display: flex; gap: 10px; margin-top: 12px; }    button { flex: 1; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: opacity 0.2s, background 0.3s; }
     button:active { opacity: 0.85; }
-    .status { text-align: center; margin-top: 8px; font-size: 13px; opacity: 0.8; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #download { background: var(--success); }
+    .status { text-align: center; margin-top: 10px; font-size: 13px; opacity: 0.8; min-height: 18px; }
   </style>
 </head>
 <body>
+  <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
   <h1>📷 Фото в Текст</h1>
   <div class="card">
     <input type="file" id="upload" accept="image/*">
     <div id="progress"><div id="progress-bar"></div></div>
-    <textarea id="result" readonly placeholder="Здесь появится распознанный текст..."></textarea>
-    <button id="copy" disabled>📋 Копировать текст</button>
+    <textarea id="result" readonly placeholder="Распознанный текст появится здесь..."></textarea>
+    <div class="btn-row">
+      <button id="copy" disabled>📋 Копировать</button>
+      <button id="download" disabled>💾 Скачать .txt</button>
+    </div>
   </div>
   <p class="status" id="status">Выберите фото или сделайте снимок</p>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script>
+    // 🎨 Логика темы
+    const html = document.documentElement;
+    const themeToggle = document.getElementById('themeToggle');
+    const saved = localStorage.getItem('theme');
+    const sysLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    const initTheme = saved || (sysLight ? 'light' : 'dark');
+    html.setAttribute('data-theme', initTheme);
+    themeToggle.textContent = initTheme === 'light' ? '☀️' : '🌙';
+
+    themeToggle.addEventListener('click', () => {
+      const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      themeToggle.textContent = next === 'light' ? '☀️' : '🌙';
+    });
+
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+      if (!localStorage.getItem('theme')) {
+        const t = e.matches ? 'light' : 'dark';
+        html.setAttribute('data-theme', t);
+        themeToggle.textContent = t === 'light' ? '☀️' : '🌙';
+      }
+    });
+
+    // 📷 Логика OCR
     const upload = document.getElementById('upload');
-    const result = document.getElementById('result');
-    const progress = document.getElementById('progress');
+    const result = document.getElementById('result');    const progress = document.getElementById('progress');
     const progressBar = document.getElementById('progress-bar');
     const copyBtn = document.getElementById('copy');
+    const downloadBtn = document.getElementById('download');
     const status = document.getElementById('status');
+
+    const updateButtons = (enabled) => {
+      copyBtn.disabled = !enabled;
+      downloadBtn.disabled = !enabled;
+      if (enabled) { copyBtn.textContent = '📋 Копировать'; downloadBtn.textContent = '💾 Скачать .txt'; }
+    };
 
     upload.addEventListener('change', async (e) => {
       const file = e.target.files[0];
@@ -45,35 +115,46 @@
       status.textContent = '⏳ Загрузка движка и обработка...';
       progress.style.display = 'block';
       progressBar.style.width = '0%';
-      copyBtn.disabled = true;
+      updateButtons(false);
       result.value = '';
 
       try {
         const worker = await Tesseract.createWorker('rus+eng', 1, {
           logger: m => {
-            if (m.status === 'recognizing text') {
-              progressBar.style.width = `${Math.round(m.progress * 100)}%`;
-            }
+            if (m.status === 'recognizing text') progressBar.style.width = `${Math.round(m.progress * 100)}%`;
           }
         });
         const { data: { text } } = await worker.recognize(file);
         await worker.terminate();
 
-        result.value = text.trim() || '🔍 Текст не найден';
-        copyBtn.disabled = false;
+        result.value = text.trim() || '🔍 Текст не найден. Попробуйте фото с чётким текстом.';
+        updateButtons(true);
         status.textContent = '✅ Готово!';
       } catch (err) {
-        status.textContent = '❌ Ошибка: ' + err.message;
-      } finally {
+        status.textContent = '❌ Ошибка: ' + (err.message || 'неизвестная');
         progress.style.display = 'none';
+      } finally {
+        if (!result.value) progress.style.display = 'none';
       }
     });
 
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(result.value).then(() => {
         copyBtn.textContent = '✅ Скопировано!';
-        setTimeout(() => copyBtn.textContent = '📋 Копировать текст', 1500);
+        setTimeout(() => copyBtn.textContent = '📋 Копировать', 1500);
       });
+    });
+
+    downloadBtn.addEventListener('click', () => {      if (!result.value.trim()) return;
+      const blob = new Blob([result.value], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ts = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+      a.href = url; a.download = `ocr-${ts}.txt`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      downloadBtn.textContent = '✅ Сохранено!';
+      setTimeout(() => downloadBtn.textContent = '💾 Скачать .txt', 1500);
     });
   </script>
 </body>
