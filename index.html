@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>📷 Фото → Текст</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --accent: #3b82f6; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 16px; min-height: 100vh; }
+    h1 { text-align: center; margin-bottom: 16px; font-size: 1.4rem; }
+    .card { background: var(--card); padding: 16px; border-radius: 12px; margin-bottom: 16px; }
+    input[type="file"] { width: 100%; padding: 10px; background: #334155; color: var(--text); border-radius: 8px; }
+    #progress { height: 6px; background: #334155; border-radius: 3px; margin: 10px 0; overflow: hidden; display: none; }
+    #progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+    textarea { width: 100%; min-height: 120px; background: #0f172a; color: var(--text); border: 1px solid #334155; border-radius: 8px; padding: 10px; font-size: 14px; resize: vertical; }
+    button { width: 100%; padding: 12px; margin-top: 10px; background: var(--accent); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; }
+    button:active { opacity: 0.85; }
+    .status { text-align: center; margin-top: 8px; font-size: 13px; opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <h1>📷 Фото в Текст</h1>
+  <div class="card">
+    <input type="file" id="upload" accept="image/*" capture="environment">
+    <div id="progress"><div id="progress-bar"></div></div>
+    <textarea id="result" readonly placeholder="Здесь появится распознанный текст..."></textarea>
+    <button id="copy" disabled>📋 Копировать текст</button>
+  </div>
+  <p class="status" id="status">Выберите фото или сделайте снимок</p>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+    const upload = document.getElementById('upload');
+    const result = document.getElementById('result');
+    const progress = document.getElementById('progress');
+    const progressBar = document.getElementById('progress-bar');
+    const copyBtn = document.getElementById('copy');
+    const status = document.getElementById('status');
+
+    upload.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      status.textContent = '⏳ Загрузка движка и обработка...';
+      progress.style.display = 'block';
+      progressBar.style.width = '0%';
+      copyBtn.disabled = true;
+      result.value = '';
+
+      try {
+        const worker = await Tesseract.createWorker('rus+eng', 1, {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              progressBar.style.width = `${Math.round(m.progress * 100)}%`;
+            }
+          }
+        });
+        const { data: { text } } = await worker.recognize(file);
+        await worker.terminate();
+
+        result.value = text.trim() || '🔍 Текст не найден';
+        copyBtn.disabled = false;
+        status.textContent = '✅ Готово!';
+      } catch (err) {
+        status.textContent = '❌ Ошибка: ' + err.message;
+      } finally {
+        progress.style.display = 'none';
+      }
+    });
+
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(result.value).then(() => {
+        copyBtn.textContent = '✅ Скопировано!';
+        setTimeout(() => copyBtn.textContent = '📋 Копировать текст', 1500);
+      });
+    });
+  </script>
+</body>
+</html>
